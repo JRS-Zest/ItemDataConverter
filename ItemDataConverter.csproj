@@ -21,7 +21,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="RedStoneLib">
-      <HintPath>..\..\..\..\RSPツール\参考用ファイル類\RedStoneLib\bin\Release\net6.0\RedStoneLib.dll</HintPath>
+      <HintPath>lib\RedStoneLib.dll</HintPath>
       <Private>true</Private>
     </Reference>
   </ItemGroup>
