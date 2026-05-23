@@ -1,0 +1,18 @@
+# Build artifacts
+bin/
+obj/
+publish/
+publish_multi/
+publish_single/
+出力テスト/
+
+# Temp/local files
+tmp_*.html
+*.user
+*.suo
+*.cache
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/

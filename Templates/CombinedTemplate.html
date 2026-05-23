@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+        <title>__PLATFORM_TITLE__</title>
+    <style>
+        body { font-family: sans-serif; background-color: #f0f2f5; margin: 20px; color: #333; }
+        
+        /* タブ切り替え */
+        .main-tabs { display: flex; gap: 3px; margin-bottom: 0; align-items: center; flex-wrap: nowrap; }
+        .main-tab-btn { padding: 10px 18px; background: #bbb; border: none; border-radius: 8px 8px 0 0; cursor: pointer; font-size: 14px; font-weight: bold; transition: background 0.2s; color: #333; }
+        .main-tab-btn:hover { background: #999; }
+        .main-tab-btn.active { background: #4A90E2; color: white; }
+        .main-tab-actions { margin-left: auto; display: flex; gap: 4px; align-items: center; }
+        .main-tab-actions button { padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px 8px 0 0; cursor: pointer; font-size: 13px; font-weight: bold; white-space: nowrap; }
+        .main-tab-content { display: none; }
+        .main-tab-content.active { display: block; }
+        
+        /* ===== アイテムタブ用スタイル (既存のItemRenderer.csから) ===== */
+        #item-tab .controls { background: white; padding: 15px; border-radius: 0 8px 8px 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; position: sticky; top: 10px; z-index: 100; }
+        #item-tab .filter-group { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+        #item-tab .filter-item { display: flex; flex-direction: column; gap: 5px; }
+        #item-tab label { font-size: 11px; font-weight: bold; color: #666; }
+        #item-tab input, #item-tab select, #item-tab button { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        #item-tab button { cursor: pointer; background: #eee; }
+        #item-tab button.active { background: #4A90E2; color: white; border-color: #4A90E2; }
+
+        #item-tab table { width: 100%; border-collapse: collapse; background: white; table-layout: fixed; margin-top: 10px; }
+        #item-tab th { background: #4A90E2; color: white; padding: 10px; text-align: left; cursor: pointer; }
+        #item-tab td { padding: 8px; border-bottom: 1px solid #eee; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        #item-tab th:first-child, #item-tab td:first-child { width: 150px; }
+        #item-tab td:first-child { overflow: visible; text-overflow: clip; }
+        #item-tab tr.item-row:hover { background: #f1f7ff; cursor: pointer; }
+        #item-tab .detail-row { display: none; background: #fafafa; }
+        #item-tab .detail-row td { white-space: normal; padding: 15px; border-bottom: 2px solid #4A90E2; }
+
+        #item-tab #cardView { display: none; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-top: 10px; }
+        #item-tab .item-card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-top: 4px solid #4A90E2; }
+        #item-tab .card-title { font-weight: bold; font-size: 15px; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 5px; color: #4A90E2; }
+        #item-tab .card-body { font-size: 12px; line-height: 1.25; }
+
+        #item-tab .pagination { margin-top: 20px; display: flex; justify-content: center; gap: 5px; }
+        #item-tab .pagination button { padding: 5px 12px; }
+        #item-tab img.item-icon { width: 24px; height: 24px; vertical-align: middle; margin-right: 4px; image-rendering: pixelated; background-color: #000; border-radius: 2px; }
+        
+        /* ===== オプションタブ用スタイル (既存のOpsRenderer.csから) ===== */
+        #ops-tab .controls { background: white; padding: 15px; border-radius: 0 8px 8px 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; position: sticky; top: 10px; z-index: 100; }
+        #ops-tab input[type="text"] { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px; box-sizing: border-box; }
+        #ops-tab .stats { margin-top: 10px; font-size: 0.9em; color: #666; }
+        
+        #ops-tab table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        #ops-tab th { background-color: #4A90E2; color: white; padding: 10px; text-align: left; white-space: nowrap; }
+        #ops-tab td { padding: 8px 10px; border-bottom: 1px solid #eee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #ops-tab tr:hover { background-color: #f1f7ff; }
+        
+        #ops-tab .col-id { width: 60px; }
+        #ops-tab .col-name { width: 200px; font-weight: bold; }
+        #ops-tab .col-effect { width: auto; }
+        #ops-tab .col-lv { width: 100px; text-align: right; }
+        #ops-tab .col-coeff { width: 100px; text-align: right; }
+
+        #ops-tab .pagination { margin-top: 20px; display: flex; justify-content: center; gap: 5px; }
+        #ops-tab .pagination button { padding: 6px 12px; border: 1px solid #ddd; background: white; cursor: pointer; border-radius: 4px; }
+        #ops-tab .pagination button.active { background: #4A90E2; color: white; border-color: #4A90E2; }
+
+        #ops-tab .view-toggle { margin-top: 10px; display: flex; gap: 8px; align-items: center; }
+        #ops-tab .view-toggle button { padding: 8px 16px; border: 1px solid #ddd; background: #eee; cursor: pointer; border-radius: 4px; }
+        #ops-tab .view-toggle button.active { background: #4A90E2; color: white; border-color: #4A90E2; }
+        #ops-tab #opsNameListView { display: none; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); white-space: pre-line; line-height: 1.8; font-size: 14px; }
+
+        #versionInfo {
+            position: fixed;
+            right: 10px;
+            bottom: 10px;
+            background: rgba(0, 0, 0, 0.75);
+            color: #fff;
+            font-size: 11px;
+            padding: 6px 8px;
+            border-radius: 6px;
+            z-index: 9999;
+            line-height: 1.4;
+            pointer-events: none;
+            white-space: pre-line;
+        }
+    </style>
+</head>
+<body>
+
+<!-- メインタブ -->
+<div class="main-tabs">
+    <button class="main-tab-btn active" onclick="showMainTab('item')">アイテム</button>
+    <button class="main-tab-btn" onclick="showMainTab('ops')">オプション</button>
+    <div class="main-tab-actions">
+        <button id="btnCopyNames" onclick="copyNames()" style="background:#5cb85c; color:white; border-color:#5cb85c;">名称のみコピー</button>
+        <button id="btnClearFilters" onclick="clearFilters()" style="background:#d9534f; color:white; border-color:#d9534f;">クリア</button>
+    </div>
+</div>
+
+<!-- ===== アイテムタブ (既存のItemRenderer.csからそのまま移植) ===== -->
+<div id="item-tab" class="main-tab-content active">
+    <div class="controls">
+        <div class="filter-group">
+            <div class="filter-item">
+                <label>キーワード</label>
+                <input type="text" id="qFull" placeholder="文字検索" onkeyup="runFilter()">
+            </div>
+            <div class="filter-item">
+                <label>種別</label>
+                <select id="qType" style="width:120px" onchange="runFilter()">
+                    <option value="">(全て)</option>
+                </select>
+            </div>
+            <div class="filter-item">
+                <label>要求Lv</label>
+                <div style="display:flex; align-items:center; gap:6px; border:1px solid #ccc; border-radius:4px; padding:4px 8px; background:#fafafa;">
+                    <input type="number" id="qReq" style="width:70px" onkeyup="runFilter()" onchange="runFilter()">
+                    <label style="font-size:11px; font-weight:bold; color:#666; display:flex; align-items:center; gap:3px; cursor:pointer; white-space:nowrap;">
+                        <input type="checkbox" id="qReqMin" onchange="runFilter()">以上のみ
+                    </label>
+                </div>
+            </div>
+            <div class="filter-item">
+                <label>DropLv</label>
+                <input type="number" id="qDrop" style="width:70px" onkeyup="runFilter()" onchange="runFilter()">
+            </div>
+            <div class="filter-item">
+                <label>表示数</label>
+                <select id="pageSize" onchange="runFilter()">
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+            </div>
+            <div class="filter-item">
+                <label>形式</label>
+                <div>
+                    <button id="btnList" class="active" onclick="setView('list')">リスト</button>
+                    <button id="btnCard" onclick="setView('card')">カード</button>
+                </div>
+            </div>
+            <div class="filter-item" style="margin-left:8px">
+                <label>クイック絞り込み</label>
+                <div style="border:1px solid #ddd; padding:8px; border-radius:6px; background:#fff; display:flex; gap:6px; flex-wrap:wrap;">
+                    <button id="fBFU" onclick="setQuickFilter('BFU')">BFU</button>
+                    <button id="f800" onclick="setQuickFilter('800')">800</button>
+                    <button id="f900" onclick="setQuickFilter('900')">900</button>
+                    <button id="f1000" onclick="setQuickFilter('1000')">1000</button>
+                    <button id="f2100" onclick="setQuickFilter('2100')">2100</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="listView">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:150px" onclick="doSort('id')" title="IDはIndex、LEはリトルエンディアン">ID/LE</th>
+                    <th onclick="doSort('name')">名称</th>
+                    <th style="width:100px" onclick="doSort('type')">種別</th>
+                    <th style="width:80px" onclick="doSort('reqLv')">要求Lv</th>
+                    <th style="width:80px" onclick="doSort('dropLv')">DropLv</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+
+    <div id="cardView"></div>
+    <div id="pagination" class="pagination"></div>
+</div>
+
+<!-- ===== オプションタブ (既存のOpsRenderer.csからそのまま移植) ===== -->
+<div id="ops-tab" class="main-tab-content">
+    <div class="controls">
+        <input type="text" id="opsSearchInput" placeholder="名前や効果で検索..." onkeyup="handleOpsSearch()">
+        <div class="stats">表示中: <span id="opsRowCount">0</span> / 全データ: <span id="opsTotalCount">0</span> (50件ずつ表示)</div>
+        <div class="view-toggle">
+            <span style="font-size:12px; color:#666;">表示形式:</span>
+            <button id="btnOpsTable" class="active" onclick="setOpsView('table')">テーブル</button>
+            <button id="btnOpsNameList" onclick="setOpsView('nameList')">名称のみ</button>
+        </div>
+    </div>
+
+    <table id="opsDataTable">
+        <thead>
+            <tr>
+                <th class="col-id">ID</th>
+                <th class="col-name">名前</th>
+                <th class="col-effect">効果</th>
+                <th class="col-lv">要求Lv上昇</th>
+                <th class="col-coeff">付加係数</th>
+            </tr>
+        </thead>
+        <tbody id="opsTableBody"></tbody>
+    </table>
+
+    <div id="opsPagination" class="pagination"></div>
+    <div id="opsNameListView"></div>
+</div>
+
+<script>
+    // ===== データ埋め込み =====
+    const itemRawData = /* ITEM_DATA_PLACEHOLDER */;
+    const opsRawData = /* OPS_DATA_PLACEHOLDER */;
+    const iconMap = /* ICON_MAP_PLACEHOLDER */;
+    const iconBase64 = /* ICON_BASE64_PLACEHOLDER */;
+    function getIconHtml(itemId) {
+        const src = (iconBase64 && iconMap) ? iconBase64[iconMap[itemId]] : null;
+        return src ? `<img class="item-icon" src="${src}">` : '';
+    }
+
+    // ===== メインタブ切り替え =====
+    function showMainTab(tabName) {
+        document.querySelectorAll('.main-tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.main-tab-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById(tabName + '-tab').classList.add('active');
+        event.target.classList.add('active');
+    }
+
+    // ===== アイテムタブ用変数・関数 (既存のItemRenderer.csからそのまま移植) =====
+    let allItems = [], filteredItems = [], currentPage = 1, currentView = 'list', currentSort = { key: 'id', asc: true };
+    let activeQuickFilter = '';
+
+    function stripColorTags(str) {
+        return str.replace(/<c:\w+>|<n>/g, '');
+    }
+
+    const typeGroups = [
+        { label: "武器", types: ["片手剣","両手剣","槍","弓","杖","牙","棍棒","棒","短剣","翼","笛","クロー","スリング","鞭","鎌","闘士武器","本"] },
+        { label: "防具", types: ["首","帽子","冠","耳","ベルト","グローブ","手首","槍投","鎧","職鎧","足","指","背中"] },
+        { label: "補助装備", types: ["ブロ","十字架","腕刺青","肩刺青","ボトル","盾","矢"] },
+        { label: "その他", types: ["お菓子","その他特殊アイテム","エンチャント系","クエストアイテム","セッティング原石","ロト系","原石","帰還","復活系","水薬","異常回復","能力アップ","課金アイテム","赤POT","鍵","青POT","魔法液"] }
+    ];
+
+    function populateTypeDropdown() {
+        const sel = document.getElementById('qType');
+        if (!sel) return;
+        sel.innerHTML = '<option value="">(全て)</option>';
+        typeGroups.forEach(group => {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = group.label;
+            group.types.forEach(type => {
+                const opt = document.createElement('option');
+                opt.value = type;
+                opt.textContent = type;
+                optgroup.appendChild(opt);
+            });
+            sel.appendChild(optgroup);
+        });
+    }
+
+    function initializeItems() {
+        if(!itemRawData) return;
+        allItems = Object.keys(itemRawData).map(id => {
+            const list = itemRawData[id].map(s => stripColorTags(s));
+            let reqLv = 0, dropLv = 0;
+            const rIdx = list.indexOf("<要求能力値>");
+            if(rIdx !== -1 && list[rIdx+1]?.includes("- レベル ")) reqLv = parseInt(list[rIdx+1].split("レベル ")[1]) || 0;
+            const dIdx = list.indexOf("<DropLv/係数>");
+            if(dIdx !== -1 && list[dIdx+1]?.includes("- ドロップレベル ")) dropLv = parseInt(list[dIdx+1].split("レベル ")[1]) || 0;
+            
+            return { id: parseInt(id), name: list[0], type: (list[2] || "").replace("- ", ""), reqLv, dropLv, fullList: list, searchIdx: list.join(" ").toLowerCase() };
+        });
+        populateTypeDropdown();
+        runFilter();
+    }
+
+    function runFilter() {
+        const qFull = document.getElementById('qFull').value.toLowerCase();
+        const qType = document.getElementById('qType').value;
+        const qReq = document.getElementById('qReq').value;
+        const qReqMin = document.getElementById('qReqMin').checked;
+        const qDrop = document.getElementById('qDrop').value;
+        const quick = activeQuickFilter;
+
+        filteredItems = allItems.filter(item => {
+            if (qFull && !item.searchIdx.includes(qFull)) return false;
+            if (qType && item.type !== qType) return false;
+            if (qReq) {
+                if (qReqMin ? item.reqLv < parseInt(qReq) : item.reqLv != qReq) return false;
+            }
+            if (qDrop && item.dropLv != qDrop) return false;
+            if (quick) {
+                const name = item.name || '';
+                const t = item.type || '';
+                if (quick === 'BFU') {
+                    if (!item.searchIdx.includes('★')) return false;
+                } else if (quick === '800') {
+                    if (item.reqLv != 800) return false;
+                    if ((name||'').includes('★')) return false;
+                } else if (quick === '900') {
+                    if (item.reqLv != 900) return false;
+                    if ((name||'').toUpperCase().includes('IF')) return false;
+                } else if (quick === '1000') {
+                    if (item.reqLv != 1000) return false;
+                    if ((t||'').includes('お菓子')) return false;
+                } else if (quick === '2100') {
+                    if (item.reqLv != 2100) return false;
+                }
+            }
+            return true;
+        });
+        currentPage = 1;
+        render();
+    }
+
+    function clearQuickButtons() {
+        ['fBFU','f800','f900','f1000','f2100'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('active');
+        });
+    }
+
+    function clearFilters() {
+        document.getElementById('qFull').value = '';
+        document.getElementById('qType').value = '';
+        document.getElementById('qReq').value = '';
+        document.getElementById('qReqMin').checked = false;
+        document.getElementById('qDrop').value = '';
+        activeQuickFilter = '';
+        clearQuickButtons();
+        runFilter();
+    }
+
+    function setQuickFilter(mode) {
+        if (activeQuickFilter === mode) {
+            activeQuickFilter = '';
+            clearQuickButtons();
+        } else {
+            activeQuickFilter = mode;
+            clearQuickButtons();
+            const btn = { 'BFU':'fBFU','800':'f800','900':'f900','1000':'f1000','2100':'f2100' }[mode];
+            const el = document.getElementById(btn);
+            if (el) el.classList.add('active');
+        }
+        runFilter();
+    }
+
+    function setView(mode) {
+        currentView = mode;
+        document.getElementById('btnList').className = mode === 'list' ? 'active' : '';
+        document.getElementById('btnCard').className = mode === 'card' ? 'active' : '';
+        document.getElementById('listView').style.display = mode === 'list' ? 'block' : 'none';
+        document.getElementById('cardView').style.display = mode === 'card' ? 'grid' : 'none';
+        render();
+    }
+
+    function formatItemIdLabel(id) {
+        const n = Number(id);
+        if (!Number.isFinite(n)) return `ID${id}`;
+        const word = n & 0xFFFF;
+        const low = (word & 0xFF).toString(16).toUpperCase().padStart(2, '0');
+        const high = ((word >> 8) & 0xFF).toString(16).toUpperCase().padStart(2, '0');
+        return `${n}/${low}${high}`;
+    }
+
+    function render() {
+        const size = parseInt(document.getElementById('pageSize').value);
+        const pageData = filteredItems.slice((currentPage - 1) * size, currentPage * size);
+        
+        if (currentView === 'list') {
+            document.getElementById('tableBody').innerHTML = pageData.map(item => `
+                <tr class="item-row" onclick="toggleDetail(${item.id})">
+                    <td>${formatItemIdLabel(item.id)}</td><td>${getIconHtml(item.id)}<strong>${item.name}</strong></td><td>${item.type}</td><td>${item.reqLv||"-"}</td><td>${item.dropLv||"-"}</td>
+                </tr>
+                <tr class="detail-row" id="detail-${item.id}"><td colspan="5"><div style="line-height:1.5">${item.fullList.join('<br>')}</div></td></tr>
+            `).join('');
+        } else {
+            document.getElementById('cardView').innerHTML = pageData.map(item => `
+                <div class="item-card">
+                    <div class="card-title">${getIconHtml(item.id)}${formatItemIdLabel(item.id)}: ${item.name}</div>
+                    <div class="card-body">${item.fullList.join('<br>')}</div>
+                </div>
+            `).join('');
+        }
+        renderPager(size);
+    }
+
+    function renderPager(size) {
+        const total = Math.ceil(filteredItems.length / size);
+        let html = "";
+        for (let i = Math.max(1, currentPage-2); i <= Math.min(total, currentPage+2); i++) {
+            html += `<button class="${i===currentPage?'active':''}" onclick="currentPage=${i};render();window.scrollTo(0,0);">${i}</button>`;
+        }
+        document.getElementById('pagination').innerHTML = html;
+    }
+
+    function toggleDetail(id) {
+        const el = document.getElementById('detail-' + id);
+        el.style.display = (el.style.display === 'table-row') ? 'none' : 'table-row';
+    }
+
+    function doSort(key) {
+        currentSort.asc = (currentSort.key === key) ? !currentSort.asc : true;
+        currentSort.key = key;
+        filteredItems.sort((a, b) => {
+            let vA = a[key], vB = b[key];
+            if (typeof vA === 'string') return currentSort.asc ? vA.localeCompare(vB) : vB.localeCompare(vA);
+            return currentSort.asc ? vA - vB : vB - vA;
+        });
+        render();
+    }
+
+    function copyNames() {
+        const names = filteredItems.map(item => item.name).join('\n');
+        navigator.clipboard.writeText(names).then(() => {
+            const btn = document.getElementById('btnCopyNames');
+            const original = btn.textContent;
+            btn.textContent = 'コピー完了!';
+            setTimeout(() => { btn.textContent = original; }, 1500);
+        }).catch(err => {
+            alert('コピーに失敗しました');
+        });
+    }
+
+    // ===== オプションタブ用変数・関数 (既存のOpsRenderer.csからそのまま移植) =====
+    let opsItems = [], opsFilteredItems = [], opsCurrentPage = 1;
+    const opsPageSize = 50;
+    let opsCurrentView = 'table';
+
+    function initOps() {
+        if(!opsRawData) return;
+        const keys = Object.keys(opsRawData);
+        document.getElementById('opsTotalCount').textContent = keys.length;
+
+        opsItems = keys.map(id => {
+            const d = opsRawData[id];
+            return {
+                id: id,
+                name: d["名前"] || "",
+                effect: d["効果"] || "",
+                reqLv: d["要求Lv上昇"] || 0,
+                coeff: d["付加係数"] || 0,
+                searchStr: (id + " " + (d["名前"]||"") + " " + (d["効果"]||"")).toLowerCase()
+            };
+        });
+        
+        handleOpsSearch();
+    }
+
+    function handleOpsSearch() {
+        const query = document.getElementById('opsSearchInput').value.toLowerCase();
+        opsFilteredItems = opsItems.filter(item => item.searchStr.includes(query));
+        opsCurrentPage = 1;
+        renderOps();
+    }
+
+    function renderOps() {
+        const start = (opsCurrentPage - 1) * opsPageSize;
+        const pageData = opsFilteredItems.slice(start, start + opsPageSize);
+        
+        const body = document.getElementById('opsTableBody');
+        body.innerHTML = pageData.map(item => `
+            <tr>
+                <td class="col-id">${item.id}</td>
+                <td class="col-name">${item.name}</td>
+                <td class="col-effect">${item.effect}</td>
+                <td class="col-lv">${item.reqLv}</td>
+                <td class="col-coeff">${item.coeff}</td>
+            </tr>
+        `).join('');
+
+        document.getElementById('opsRowCount').textContent = opsFilteredItems.length;
+        renderOpsPagination();
+        renderOpsNameList();
+    }
+
+    function setOpsView(mode) {
+        opsCurrentView = mode;
+        document.getElementById('btnOpsTable').className = mode === 'table' ? 'active' : '';
+        document.getElementById('btnOpsNameList').className = mode === 'nameList' ? 'active' : '';
+        document.getElementById('opsDataTable').style.display = mode === 'table' ? 'table' : 'none';
+        document.getElementById('opsPagination').style.display = mode === 'table' ? 'flex' : 'none';
+        document.getElementById('opsNameListView').style.display = mode === 'nameList' ? 'block' : 'none';
+    }
+
+    function renderOpsNameList() {
+        const names = opsFilteredItems.map(item => item.name).join('\n');
+        document.getElementById('opsNameListView').textContent = names;
+    }
+
+    function renderOpsPagination() {
+        const totalPages = Math.ceil(opsFilteredItems.length / opsPageSize);
+        const nav = document.getElementById('opsPagination');
+        nav.innerHTML = "";
+        if (totalPages <= 1) return;
+
+        const range = 2; 
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === 1 || i === totalPages || (i >= opsCurrentPage - range && i <= opsCurrentPage + range)) {
+                const btn = document.createElement('button');
+                btn.textContent = i;
+                btn.className = (i === opsCurrentPage) ? 'active' : '';
+                btn.onclick = () => { opsCurrentPage = i; renderOps(); window.scrollTo(0,0); };
+                nav.appendChild(btn);
+            } else if (i === opsCurrentPage - range - 1 || i === opsCurrentPage + range + 1) {
+                const dots = document.createElement('span');
+                dots.textContent = "...";
+                dots.style.padding = "5px";
+                nav.appendChild(dots);
+            }
+        }
+    }
+
+    // ===== 初期化 =====
+    window.onload = function() {
+        initializeItems();
+        initOps();
+        updateVersionInfo();
+    };
+
+    function updateVersionInfo() {
+        const params = new URLSearchParams(window.location.search);
+        const cacheKey = params.get('v') || 'none';
+        const loadedAt = new Date().toLocaleString('ja-JP');
+        const el = document.getElementById('versionInfo');
+        if (el) {
+            el.textContent = `ver: ${cacheKey}\nloaded: ${loadedAt}`;
+        }
+    }
+</script>
+<div id="versionInfo"></div>
+</body>
+</html>
+
